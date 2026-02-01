@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDS Signal Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .header .emoji {
+            font-size: 3em;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        select, input {
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            transition: all 0.3s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .mode-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .mode-btn {
+            padding: 8px 16px;
+            background: #e9ecef;
+            color: #333;
+            border: 2px solid transparent;
+        }
+
+        .mode-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #5568d3;
+        }
+
+        .signals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .signal-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s;
+        }
+
+        .signal-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .signal-card .timeframe {
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .signal-card .signal {
+            font-size: 2em;
+            margin: 10px 0;
+        }
+
+        .signal-card .status {
+            font-weight: 600;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .signal-up {
+            color: #10b981;
+        }
+
+        .signal-down {
+            color: #ef4444;
+        }
+
+        .signal-neutral {
+            color: #6b7280;
+        }
+
+        .status.up {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .status.down {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .status.loading {
+            background: #e5e7eb;
+            color: #6b7280;
+        }
+
+        .scanner-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .scanner-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .scanner-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .result-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result-card .symbol {
+            font-weight: 700;
+            font-size: 1.2em;
+            color: #333;
+        }
+
+        .result-card .trend {
+            margin-top: 8px;
+            font-size: 0.9em;
+        }
+
+        .settings-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .settings-modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h3 {
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        .setting-item {
+            margin-bottom: 15px;
+        }
+
+        .setting-item label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .setting-item input[type="number"],
+        .setting-item input[type="checkbox"] {
+            margin-right: 5px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .close-btn {
+            background: #6b7280;
+        }
+
+        .close-btn:hover {
+            background: #4b5563;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .signals-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="emoji">📊</div>
+            <h1>DDS Signal Dashboard</h1>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>Market:</label>
+                <select id="marketSelect">
+                    <option value="crypto">Crypto</option>
+                    <option value="forex">Forex</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Symbol:</label>
+                <select id="symbolSelect">
+                    <option value="BTC/USDT">BTC/USDT</option>
+                    <option value="ETH/USDT">ETH/USDT</option>
+                    <option value="SOL/USDT">SOL/USDT</option>
+                    <option value="BNB/USDT">BNB/USDT</option>
+                    <option value="XRP/USDT">XRP/USDT</option>
+                    <option value="ADA/USDT">ADA/USDT</option>
+                    <option value="DOGE/USDT">DOGE/USDT</option>
+                    <option value="DOT/USDT">DOT/USDT</option>
+                    <option value="MATIC/USDT">MATIC/USDT</option>
+                    <option value="LTC/USDT">LTC/USDT</option>
+                </select>
+            </div>
+
+            <button onclick="refreshSignals()">🔄 Refresh</button>
+            <button onclick="showSettings()">⚙️ Settings</button>
+            
+            <div class="mode-buttons">
+                <button class="mode-btn active" onclick="setMode('scalping')">⚡ Scalping Mode</button>
+                <button class="mode-btn" onclick="setMode('swing')">📊 Swing Mode</button>
+            </div>
+        </div>
+
+        <div class="signals-grid" id="signalsGrid">
+            <div class="signal-card">
+                <div class="timeframe">1 MIN</div>
+                <div class="signal signal-neutral">⛶</div>
+                <div class="status loading">Loading...</div>
+            </div>
+            <div class="signal-card">
+                <div class="timeframe">3 MIN</div>
+                <div class="signal signal-neutral">⛶</div>
+                <div class="status loading">Loading...</div>
+            </div>
+            <div class="signal-card">
+                <div class="timeframe">5 MIN</div>
+                <div class="signal signal-neutral">⛶</div>
+                <div class="status loading">Loading...</div>
+            </div>
+            <div class="signal-card">
+                <div class="timeframe">15 MIN</div>
+                <div class="signal signal-neutral">⛶</div>
+                <div class="status loading">Loading...</div>
+            </div>
+            <div class="signal-card">
+                <div class="timeframe">30 MIN</div>
+                <div class="signal signal-neutral">⛶</div>
+                <div class="status loading">Loading...</div>
+            </div>
+            <div class="signal-card">
+                <div class="timeframe">1 HOUR</div>
+                <div class="signal signal-neutral">⛶</div>
+                <div class="status loading">Loading...</div>
+            </div>
+        </div>
+
+        <div class="scanner-section">
+            <h3>🔍 Multi-Market Trend Scanner</h3>
+            <p>Select market and scan for TREND UP / TREND DOWN signals</p>
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <button onclick="scanMarket('crypto')">₿ Crypto Scan</button>
+                <button onclick="scanMarket('forex')">💱 Forex Scan</button>
+            </div>
+            <div class="scanner-results" id="scannerResults">
+                <p>⏳ Select a market and click Scan to start...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="settings-modal" id="settingsModal">
+        <div class="modal-content">
+            <h3>⚙️ Signal Settings</h3>
+            
+            <h4 style="margin-top: 20px; color: #333;">📊 Indicator Settings</h4>
+            
+            <div class="setting-item">
+                <label>HMA Period:</label>
+                <input type="number" id="hmaPeriod" value="20" min="5" max="200">
+            </div>
+            
+            <div class="setting-item">
+                <label>Fast EMA:</label>
+                <input type="number" id="fastEma" value="12" min="5" max="50">
+            </div>
+            
+            <div class="setting-item">
+                <label>Slow EMA:</label>
+                <input type="number" id="slowEma" value="26" min="10" max="100">
+            </div>
+            
+            <div class="setting-item">
+                <label>BB Period:</label>
+                <input type="number" id="bbPeriod" value="20" min="5" max="50">
+            </div>
+            
+            <div class="setting-item">
+                <label>BB Multiplier:</label>
+                <input type="number" id="bbMultiplier" value="2" min="1" max="5" step="0.1">
+            </div>
+
+            <h4 style="margin-top: 20px; color: #333;">🎯 Signal Filters</h4>
+            
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="rsiFilter"> 📈 RSI Filter
+                </label>
+            </div>
+            
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="macdFilter"> 📊 MACD Filter
+                </label>
+            </div>
+            
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="volumeFilter"> 📦 Volume Filter
+                </label>
+            </div>
+            
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="adxFilter"> 💪 ADX Filter
+                </label>
+            </div>
+
+            <div class="modal-buttons">
+                <button onclick="applySettings()">✅ Apply</button>
+                <button class="close-btn" onclick="closeSettings()">❌ Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'scalping';
+        let settings = {
+            hmaPeriod: 20,
+            fastEma: 12,
+            slowEma: 26,
+            bbPeriod: 20,
+            bbMultiplier: 2,
+            filters: {
+                rsi: false,
+                macd: false,
+                volume: false,
+                adx: false
+            }
+        };
+
+        const cryptoSymbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'BNB/USDT', 'XRP/USDT', 
+                               'ADA/USDT', 'DOGE/USDT', 'DOT/USDT', 'MATIC/USDT', 'LTC/USDT'];
+        
+        const forexSymbols = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD', 
+                              'NZD/USD', 'EUR/GBP', 'EUR/JPY', 'GBP/JPY', 'USD/CHF'];
+
+        document.getElementById('marketSelect').addEventListener('change', function() {
+            const market = this.value;
+            const symbolSelect = document.getElementById('symbolSelect');
+            symbolSelect.innerHTML = '';
+            
+            const symbols = market === 'crypto' ? cryptoSymbols : forexSymbols;
+            symbols.forEach(symbol => {
+                const option = document.createElement('option');
+                option.value = symbol;
+                option.textContent = symbol;
+                symbolSelect.appendChild(option);
+            });
+            
+            refreshSignals();
+        });
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            refreshSignals();
+        }
+
+        function generateSignal() {
+            const random = Math.random();
+            if (random < 0.4) {
+                return { signal: '▲', class: 'signal-up', status: 'TREND UP', statusClass: 'up' };
+            } else if (random < 0.8) {
+                return { signal: '▼', class: 'signal-down', status: 'TREND DOWN', statusClass: 'down' };
+            } else {
+                return { signal: '⛶', class: 'signal-neutral', status: 'NEUTRAL', statusClass: 'loading' };
+            }
+        }
+
+        function refreshSignals() {
+            const symbol = document.getElementById('symbolSelect').value;
+            const timeframes = ['1 MIN', '3 MIN', '5 MIN', '15 MIN', '30 MIN', '1 HOUR'];
+            const grid = document.getElementById('signalsGrid');
+            
+            grid.innerHTML = '';
+            
+            timeframes.forEach(timeframe => {
+                const card = document.createElement('div');
+                card.className = 'signal-card';
+                
+                const signalData = generateSignal();
+                
+                card.innerHTML = `
+                    <div class="timeframe">${timeframe}</div>
+                    <div class="signal ${signalData.class}">${signalData.signal}</div>
+                    <div class="status ${signalData.statusClass}">${signalData.status}</div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+
+        function scanMarket(market) {
+            const resultsDiv = document.getElementById('scannerResults');
+            resultsDiv.innerHTML = '<div class="loading-spinner"></div> <span style="margin-left: 10px;">Scanning markets...</span>';
+            
+            setTimeout(() => {
+                const symbols = market === 'crypto' ? cryptoSymbols : forexSymbols;
+                resultsDiv.innerHTML = '';
+                
+                symbols.forEach(symbol => {
+                    const signalData = generateSignal();
+                    const card = document.createElement('div');
+                    card.className = 'result-card';
+                    card.innerHTML = `
+                        <div class="symbol">${symbol}</div>
+                        <div class="trend ${signalData.class}">${signalData.signal} ${signalData.status}</div>
+                    `;
+                    resultsDiv.appendChild(card);
+                });
+            }, 1500);
+        }
+
+        function showSettings() {
+            document.getElementById('settingsModal').classList.add('show');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('show');
+        }
+
+        function applySettings() {
+            settings.hmaPeriod = parseInt(document.getElementById('hmaPeriod').value);
+            settings.fastEma = parseInt(document.getElementById('fastEma').value);
+            settings.slowEma = parseInt(document.getElementById('slowEma').value);
+            settings.bbPeriod = parseInt(document.getElementById('bbPeriod').value);
+            settings.bbMultiplier = parseFloat(document.getElementById('bbMultiplier').value);
+            
+            settings.filters.rsi = document.getElementById('rsiFilter').checked;
+            settings.filters.macd = document.getElementById('macdFilter').checked;
+            settings.filters.volume = document.getElementById('volumeFilter').checked;
+            settings.filters.adx = document.getElementById('adxFilter').checked;
+            
+            closeSettings();
+            refreshSignals();
+        }
+
+        // Initialize on load
+        window.addEventListener('load', function() {
+            refreshSignals();
+        });
+
+        // Auto-refresh every 30 seconds
+        setInterval(refreshSignals, 30000);
+    </script>
+</body>
+</html>
